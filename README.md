@@ -1,0 +1,244 @@
+# Couchbase for VoltAgent
+
+`@couchbase/voltagent` adds Couchbase-backed vector memory and retrieval to
+[VoltAgent](https://voltagent.dev/). It implements VoltAgent's public `VectorAdapter` contract and
+uses Couchbase Server 8.0+ Hyperscale Vector Search through SQL++.
+
+Use it to:
+
+- persist VoltAgent semantic-memory embeddings next to operational application data;
+- build filtered RAG retrieval with Couchbase scopes and collections; or
+- expose a Couchbase knowledge base as a VoltAgent retriever or tool.
+
+It does not generate embeddings, replace VoltAgent's conversation `StorageAdapter`, or provide
+full-text/hybrid Search Service queries. Bring a VoltAgent embedding model or your own embedding
+function. Hyperscale Vector Search is the default and only search backend in this first release.
+
+## Requirements
+
+- Node.js 20 or newer.
+- `@voltagent/core` 2.4 or newer in the 2.x release line.
+- Couchbase Server 8.0+ or a current Capella Operational cluster with Data, Query, and Index
+  services.
+- A COSINE Hyperscale vector index whose dimension matches the embedding model.
+- Enterprise self-managed clusters must use standard GSI (Plasma) storage for vector indexes.
+
+## Install
+
+```bash
+npm install @couchbase/voltagent @voltagent/core
+```
+
+## Quickstart
+
+Create a bucket, scope, and dedicated collection first. The examples use
+`app.application.voltagent_vectors`.
+
+```ts
+import { CouchbaseVectorAdapter } from "@couchbase/voltagent";
+
+const vectors = new CouchbaseVectorAdapter({
+  connectionString: process.env.CB_CONNECTION_STRING!,
+  username: process.env.CB_USERNAME!,
+  password: process.env.CB_PASSWORD!,
+  bucketName: "app",
+  scopeName: "application",
+  collectionName: "voltagent_vectors",
+  dimensions: 1536,
+});
+
+await vectors.storeBatch([
+  {
+    id: "doc-1",
+    vector: embedding,
+    content: "Couchbase stores operational and vector data together.",
+    metadata: { userId: "user-1", conversationId: "conversation-1" },
+  },
+]);
+
+// Provision once, using credentials with Query Manage Index. Keep this out of app startup.
+await vectors.createHyperscaleVectorIndex();
+
+const matches = await vectors.search(queryEmbedding, {
+  limit: 5,
+  threshold: 0.7,
+  filter: { userId: "user-1", conversationId: "conversation-1" },
+});
+
+console.log(matches);
+await vectors.close();
+```
+
+The generated index uses `COSINE`, `IVF,SQ8`, the document ownership predicate, and the default
+prefilter fields `userId` and `conversationId`. For a production data set, load representative
+vectors before the initial index build; rebuild the index if the vector distribution later changes
+substantially. In production, run index creation as a deployment/provisioning step with a separate
+privileged credential; do not grant Query Manage Index to the application runtime.
+
+### VoltAgent semantic memory
+
+```ts
+import { InMemoryStorageAdapter, Memory } from "@voltagent/core";
+import { CouchbaseVectorAdapter } from "@couchbase/voltagent";
+
+const vector = new CouchbaseVectorAdapter({
+  connectionString: process.env.CB_CONNECTION_STRING!,
+  username: process.env.CB_USERNAME!,
+  password: process.env.CB_PASSWORD!,
+  bucketName: "app",
+  scopeName: "application",
+  collectionName: "voltagent_vectors",
+  dimensions: 1536,
+});
+
+const memory = new Memory({
+  storage: new InMemoryStorageAdapter(), // replace with persistent conversation storage as needed
+  embedding: { model: "openai/text-embedding-3-small" },
+  vector,
+});
+```
+
+VoltAgent automatically supplies `userId` and `conversationId` equality filters for semantic
+memory. Those fields are included in the default Hyperscale index.
+
+### Couchbase retriever
+
+`CouchbaseRetriever` turns the same adapter into a VoltAgent `BaseRetriever`. Supply the embedding
+function so the package remains provider-neutral.
+
+```ts
+import { CouchbaseRetriever } from "@couchbase/voltagent/retriever";
+
+const retriever = new CouchbaseRetriever({
+  adapter: vectors,
+  embed: embedText,
+  topK: 3,
+  threshold: 0.7,
+  filter: ({ userId }) => (userId ? { userId } : undefined),
+});
+
+// Use directly as an agent retriever or expose retriever.tool.
+```
+
+## Provision Couchbase
+
+### Capella (recommended for hosted applications)
+
+1. Create a Capella Operational cluster with Query and Index services.
+2. Create the bucket, scope, and `voltagent_vectors` collection.
+3. Add the application's outbound IP address to Capella's allowed IP list.
+4. Create database credentials scoped to the bucket/collection. Runtime access needs KV read/write
+   and Query Select; index provisioning additionally needs Query Manage Index. Reading index state
+   with `getHyperscaleVectorIndexStatus()` needs Query List Index (or Query Manage Index).
+5. Copy the SDK connection string and use `couchbases://...` with TLS.
+
+Capella is the default choice when VoltAgent runs in a hosted platform: a Couchbase instance bound
+only to a developer laptop is not reachable from that platform.
+
+### Self-managed/local
+
+Run Couchbase Server Enterprise 8.0+, enable Data, Query, and Index services, select standard GSI
+(Plasma) index storage, and create the namespace in the Web Console. The repository's
+`npm run test:integration:docker` command is also an executable local provisioning example.
+
+Use `couchbase://127.0.0.1` locally. Use `couchbases://` plus a trusted CA in production.
+
+## Why a dedicated collection matters for `clear()`
+
+VoltAgent defines `VectorAdapter.clear()` as “remove every vector owned by this adapter.” It must
+not mean “delete every document in the Couchbase collection.” A collection may also contain orders,
+users, invoices, or another application's vectors.
+
+The recommended layout is a dedicated collection such as
+`app.application.voltagent_vectors`. Calling `clear()` deletes the adapter's documents, never the
+collection itself. This makes the ownership boundary obvious to operators and lets collection-level
+RBAC protect the rest of the application.
+
+The collection and discriminator solve different problems. The dedicated collection limits the
+operational blast radius and makes RBAC, retention, and inspection straightforward. The document
+discriminator tells the adapter which documents inside that collection it owns, so it does not have
+to equate “present in this collection” with “safe to delete.” A unique discriminator is therefore
+required even when a dedicated collection is used.
+
+The adapter enforces this ownership boundary in depth, including when a shared collection is
+unavoidable:
+
+- document keys begin with `voltagent::vector::` by default;
+- every owned document contains `documentType: "voltagent_vector"` and `schemaVersion: 1`;
+- `clear()` prefix-scans candidate keys, checks the discriminator, and CAS-deletes only owned docs;
+- `store()` refuses to overwrite a key occupied by a document without that discriminator; and
+- the Hyperscale index is partial: `WHERE documentType = 'voltagent_vector'`.
+
+Changing `keyPrefix` or `documentType` creates a different ownership namespace. Keep both stable for
+the lifetime of stored data. Do not reuse both reserved markers for unrelated application records;
+they are ownership identifiers, not a security secret.
+
+`clear()` and `count()` use Couchbase KV prefix scans and materialize the matching scan results. They
+are safe maintenance operations, but they are O(n) in the adapter-owned keyspace and are not meant
+for a request hot path or frequent use on very large collections.
+
+## Filters and index changes
+
+Hyperscale prefilters must be declared when the index is built. The adapter accepts equality filters
+only for `filterFields`; unknown fields and non-scalar values throw
+`CouchbaseUnsupportedFilterError` instead of falling back to an incorrect or expensive query.
+
+```ts
+const vectors = new CouchbaseVectorAdapter({
+  // connection and namespace...
+  dimensions: 1024,
+  filterFields: ["userId", "conversationId", "tenantId", "category"],
+});
+```
+
+After changing `dimensions`, `filterFields`, `documentType`, or index algorithm settings, rebuild the
+index before serving queries.
+
+## Connection ownership
+
+Pass connection fields and `close()` will close the SDK cluster created by the adapter. Alternatively,
+inject an existing `cluster`; it remains caller-owned. `getCluster()` and `getCollection()` expose
+the native SDK objects for advanced operations without wrapping the full Couchbase SDK.
+
+## Troubleshooting
+
+- **No index available / index scan error:** create the Hyperscale index and wait until its state is
+  `online`; verify dimension and `COSINE` match the query.
+- **Vector indexes require standard GSI:** use Enterprise Edition with Plasma, not
+  `memory_optimized` index storage.
+- **Filter field is not configured:** add it to `filterFields`, then rebuild the index.
+- **Collection not found:** create the configured scope and collection; the adapter intentionally
+  does not create application namespaces at runtime.
+- **Authentication/authorization failure:** separate runtime data/query roles from the privileged
+  index-provisioning role.
+- **TLS failure in Capella:** use the `couchbases://` connection string and current Capella CA trust.
+- **Document collision:** use the dedicated collection or select a different stable `keyPrefix`.
+- **Large `clear()` or `count()`:** run it as an administrative job during low traffic. These methods
+  use KV range scans, which Couchbase recommends for low-concurrency, non-latency-critical work.
+- **Offline `models.dev` warning in development:** importing the optional retriever also imports
+  `@voltagent/core`, whose development-mode model registry may attempt a background refresh. The
+  root adapter export does not make this request, and production-mode imports do not start the
+  refresh. This is upstream VoltAgent behavior, not a Couchbase connection attempt.
+
+For a complete walkthrough, see [docs/TUTORIAL.md](docs/TUTORIAL.md). A runnable online-store support
+scenario is in [docs/CUSTOMER_SUPPORT_EXAMPLE.md](docs/CUSTOMER_SUPPORT_EXAMPLE.md). Contributor
+commands and the release process are in [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and
+[docs/RELEASING.md](docs/RELEASING.md).
+
+## Current limitations
+
+- Couchbase Server 8.0+/current Capella Operational is required because Hyperscale is the default.
+- Filters are scalar equality predicates over fields configured before index creation.
+- Index creation is explicit and needs elevated privileges.
+- `clear()` and `count()` are prefix-scan maintenance operations, not constant-time operations.
+- Batch writes/deletes are concurrent but non-transactional. If one item fails, completed items are
+  not rolled back; the method waits for in-flight operations before rejecting, and callers may retry
+  safely by ID.
+- `CouchbaseVectorAdapter` provides vector memory; it is not a full VoltAgent conversation
+  `StorageAdapter`.
+- VoltAgent 2.x is tested directly. The 3.x peer range should be added only after its stable API is
+  available and covered in CI.
+
+## License
+
+Apache-2.0

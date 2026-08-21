@@ -1,0 +1,22 @@
+name: Live Couchbase integration
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  couchbase-server-8:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:integration:docker
+      # Use a fresh container so back-to-back vector-index builds do not contend on the small CI node.
+      - run: npm run example:customer-support:docker

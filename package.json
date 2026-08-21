@@ -1,0 +1,105 @@
+{
+  "name": "@couchbase/voltagent",
+  "version": "0.1.0",
+  "description": "Couchbase vector search and retrieval integration for VoltAgent",
+  "keywords": [
+    "couchbase",
+    "voltagent",
+    "vector-search",
+    "rag",
+    "ai-agents"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Couchbase-Ecosystem/couchbase-voltagent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Couchbase-Ecosystem/couchbase-voltagent/issues"
+  },
+  "homepage": "https://github.com/Couchbase-Ecosystem/couchbase-voltagent#readme",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "retriever": [
+        "dist/retriever.d.ts"
+      ],
+      "*": [
+        "dist/index.d.ts"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./retriever": {
+      "import": {
+        "types": "./dist/retriever.d.ts",
+        "default": "./dist/retriever.js"
+      },
+      "require": {
+        "types": "./dist/retriever.d.cts",
+        "default": "./dist/retriever.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "docs",
+    "examples"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run publint",
+    "format": "biome format . --write",
+    "lint": "biome check .",
+    "publint": "publint --strict --pack=false",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:integration:docker": "bash scripts/run-integration-tests.sh",
+    "preexample:customer-support": "npm run build",
+    "example:customer-support": "node docs/examples/customer-support-rag.mjs",
+    "example:customer-support:docker": "bash scripts/run-customer-support-example.sh",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "couchbase": "^4.7.1"
+  },
+  "peerDependencies": {
+    "@voltagent/core": ">=2.4.0 <3"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.2",
+    "@biomejs/biome": "^2.2.0",
+    "@types/node": "^24.0.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@voltagent/core": "^2.9.2",
+    "publint": "^0.3.12",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,7 @@
+src/
+test/
+coverage/
+*.config.ts
+tsconfig.json
+biome.json
+.env*
