@@ -5,7 +5,7 @@ Replace it with the same production embedding model used by your application.
 
 ## 1. Prerequisites
 
-- Node.js 20+
+- Node.js 22+
 - Couchbase Server Enterprise 8.0+ with Data, Query, and Index services, or Capella Operational
 - Standard GSI (Plasma) index storage on self-managed Enterprise
 - A database user with KV read/write and Query Select
@@ -47,10 +47,17 @@ these variables.
 
 ## 4. Run the example
 
-Copy [examples/semantic-memory.ts](../examples/semantic-memory.ts), then run it with your preferred
-TypeScript runner, for example:
+From a clone of this repository, install the locked dependencies and run the checked-in example:
 
 ```bash
+npm ci
+npm run example:semantic-memory
+```
+
+In another project, copy [examples/semantic-memory.ts](../examples/semantic-memory.ts), then run:
+
+```bash
+npm install --save-dev tsx@4.23.12
 npx tsx semantic-memory.ts
 ```
 

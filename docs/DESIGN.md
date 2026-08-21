@@ -31,7 +31,7 @@ a substantive integration, not a wrapper duplicating an established upstream pro
 | Index management | Explicit DDL helper and readiness/status methods |
 | Clear/count | KV prefix scan plus document ownership discriminator |
 | Embeddings | Supplied by VoltAgent or caller; Couchbase does not generate them |
-| Local verification | Enterprise Server 8 container with Plasma, Query, Index, and Data services |
+| Local verification | Enterprise Server 8.0.2 container with Plasma, Query, Index, and Data services |
 
 ## Safety boundary
 

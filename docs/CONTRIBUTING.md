@@ -3,7 +3,7 @@
 ## Local setup
 
 ```bash
-npm install
+npm ci
 npm run lint
 npm run typecheck
 npm test
@@ -23,7 +23,7 @@ Docker Engine is enough; Docker Compose is not required by the runner:
 npm run test:integration:docker
 ```
 
-The script starts `couchbase/server:enterprise-8.0.0`, initializes Data/Query/Index services with
+The script starts `couchbase/server:enterprise-8.0.2`, initializes Data/Query/Index services with
 Plasma, creates the `voltagent` bucket, runs the live tests, and removes only its named test
 container. Do not point this command at a shared or production cluster.
 
@@ -69,3 +69,11 @@ disposable bucket and credentials with namespace/index-management permissions.
 Before release, run `npm run check`, `npm run test:coverage`,
 `npm run test:integration:docker`, `npm pack --dry-run`, and `npx attw --pack`. Review the tarball list
 for tests, secrets, environment files, or generated content that should not ship.
+
+The lockfile is the source of truth for development tooling. The current compatibility baseline is
+Node.js 22; CI also tests Node.js 24 LTS and Node.js 26 Current. `@types/node` intentionally tracks
+the latest Node.js 22 declarations so type checking does not accidentally depend on APIs absent from
+the minimum supported runtime. TypeScript 6.0.3 is the newest compiler compatible with tsup 8.5.1's
+declaration bundler; TypeScript 7.0.2 type-checks the source but crashes that upstream bundler, so it
+is intentionally not used. Before a release, use `npm outdated` and the official Couchbase Server
+release notes to review dependency and Docker-image updates, then rerun every check above.

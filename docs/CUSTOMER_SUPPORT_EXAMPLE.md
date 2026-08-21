@@ -13,18 +13,18 @@ embedding model.
 
 ## Run it against Couchbase in Docker
 
-Prerequisites are Node.js 20+, npm, Docker Engine, and free ports 8091–8096 and 11210.
+Prerequisites are Node.js 22+, npm, Docker Engine, and free ports 8091–8096 and 11210.
 
 From this repository, run:
 
 ```bash
-npm install
+npm ci
 npm run example:customer-support:docker
 ```
 
 The command performs the entire live path:
 
-1. starts `couchbase/server:enterprise-8.0.0` in a temporary named container;
+1. starts `couchbase/server:enterprise-8.0.2` in a temporary named container;
 2. enables Data, Query, and Index services with Plasma index storage;
 3. creates the `voltagent` bucket;
 4. builds the package and runs

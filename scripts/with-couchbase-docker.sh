@@ -39,7 +39,7 @@ docker run --detach \
   --name "$container_name" \
   --publish 8091-8096:8091-8096 \
   --publish 11210:11210 \
-  couchbase/server:enterprise-8.0.0 >/dev/null
+  couchbase/server:enterprise-8.0.2 >/dev/null
 
 wait_for "the Couchbase Web Console" 120 \
   curl --fail --silent --output /dev/null http://127.0.0.1:8091/ui/index.html
