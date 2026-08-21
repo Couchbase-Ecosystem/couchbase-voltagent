@@ -34,9 +34,23 @@ jobs:
             echo "Release tag ${GITHUB_REF_NAME} does not match package version ${package_version}." >&2
             exit 1
           fi
+          echo "version=${package_version}" >> "${GITHUB_OUTPUT}"
           if [[ "${package_version}" == *-* ]]; then
             echo "tag=next" >> "${GITHUB_OUTPUT}"
           else
             echo "tag=latest" >> "${GITHUB_OUTPUT}"
           fi
-      - run: npm publish --access public --tag "${{ steps.release.outputs.tag }}"
+      - name: Check whether this immutable version already exists
+        id: registry
+        run: |
+          if npm view "@couchbase/voltagent@${{ steps.release.outputs.version }}" version >/dev/null 2>&1; then
+            echo "exists=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "exists=false" >> "${GITHUB_OUTPUT}"
+          fi
+      - name: Publish package
+        if: steps.registry.outputs.exists != 'true'
+        run: npm publish --access public --tag "${{ steps.release.outputs.tag }}"
+      - name: Report an already-published bootstrap version
+        if: steps.registry.outputs.exists == 'true'
+        run: echo "@couchbase/voltagent@${{ steps.release.outputs.version }} already exists; keeping the GitHub Release without republishing it."

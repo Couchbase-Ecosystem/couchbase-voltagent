@@ -17,7 +17,8 @@ not implement its runtime contracts.
 
 The npm package must exist before its trusted publisher can be configured. A maintainer with
 `@couchbase` publish permission first sets and commits a bootstrap prerelease version such as
-`0.1.0-rc.0`, pushes its tag, and then performs this one-time publish from a clean checkout:
+`0.1.0-rc.0`, pushes its commit and tag, and then performs this one-time publish from a clean
+checkout:
 
 ```bash
 npm login
@@ -32,8 +33,10 @@ npm publish --tag next --access public --provenance=false
 
 Use a prerelease package version such as `0.1.0-rc.0` for this bootstrap; npm versions are immutable.
 The explicit `--provenance=false` is limited to this local first publish because provenance requires
-a supported CI identity. Do not publish a GitHub release for this bootstrap version: that would
-trigger the OIDC workflow and attempt to publish the same immutable npm version again.
+a supported CI identity. After the npm publish succeeds, create the matching GitHub prerelease using
+the already-pushed `v0.1.0-rc.0` tag. The workflow detects that the immutable npm version already
+exists and completes without attempting a duplicate publish, so the bootstrap version appears in
+both npm and GitHub Releases.
 
 After the package exists, open its npm **Settings → Trusted Publisher**, select GitHub Actions, and
 configure these exact values:
@@ -45,8 +48,10 @@ configure these exact values:
 - Allowed action: `npm publish`
 
 The checked-in [publish workflow](../.github/workflows/publish.yml) uses GitHub OIDC, so it requires
-no `NPM_TOKEN`. Once one OIDC publish succeeds, set npm publishing access to **Require two-factor
-authentication and disallow tokens**.
+no `NPM_TOKEN`. It validates that the GitHub tag exactly matches `package.json`, publishes
+prereleases to `next` and stable versions to `latest`, and leaves an already-published bootstrap
+version untouched. Once one OIDC publish succeeds, set npm publishing access to **Require
+two-factor authentication and disallow tokens**.
 
 ## Release checklist
 
