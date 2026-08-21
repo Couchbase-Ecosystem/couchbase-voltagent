@@ -7,9 +7,46 @@ not implement its runtime contracts.
 
 - Confirm the `Couchbase-Ecosystem/couchbase-voltagent` repository metadata in `package.json` still
   matches the public release location.
-- Obtain publish access to the `@couchbase` npm organization.
-- Use an npm trusted publisher (recommended) or an automation token with publish permission.
+- Obtain publish access to the `@couchbase` npm organization and enable two-factor authentication
+  on the maintainer account.
 - Ensure the package name `@couchbase/voltagent` is approved for public use.
+- Create a protected GitHub environment named `npm`, with the package maintainers as required
+  reviewers.
+
+## Bootstrap the package and trusted publisher
+
+The npm package must exist before its trusted publisher can be configured. A maintainer with
+`@couchbase` publish permission first sets and commits a bootstrap prerelease version such as
+`0.1.0-rc.0`, pushes its tag, and then performs this one-time publish from a clean checkout:
+
+```bash
+npm login
+npm ci
+npm run check
+npm run test:coverage
+npm run test:integration:docker
+npm pack --dry-run
+npx attw --pack
+npm publish --tag next --access public --provenance=false
+```
+
+Use a prerelease package version such as `0.1.0-rc.0` for this bootstrap; npm versions are immutable.
+The explicit `--provenance=false` is limited to this local first publish because provenance requires
+a supported CI identity. Do not publish a GitHub release for this bootstrap version: that would
+trigger the OIDC workflow and attempt to publish the same immutable npm version again.
+
+After the package exists, open its npm **Settings → Trusted Publisher**, select GitHub Actions, and
+configure these exact values:
+
+- Organization or user: `Couchbase-Ecosystem`
+- Repository: `couchbase-voltagent`
+- Workflow filename: `publish.yml`
+- Environment: `npm`
+- Allowed action: `npm publish`
+
+The checked-in [publish workflow](../.github/workflows/publish.yml) uses GitHub OIDC, so it requires
+no `NPM_TOKEN`. Once one OIDC publish succeeds, set npm publishing access to **Require two-factor
+authentication and disallow tokens**.
 
 ## Release checklist
 
@@ -30,17 +67,21 @@ not implement its runtime contracts.
 4. Inspect dependency audit findings. Distinguish runtime issues from dev-only transitive findings;
    do not suppress either without a written decision.
 5. Inspect the tarball contents and import both ESM and CommonJS exports.
-6. Publish a prerelease first:
+6. After the bootstrap version, create the next release candidate:
 
    ```bash
    npm version prerelease --preid rc
-   npm publish --tag next --provenance
    ```
 
-7. Install `@couchbase/voltagent@next` in a clean VoltAgent application and repeat a live query.
-8. Promote a reviewed stable version with `npm publish --provenance`.
-9. Create the matching GitHub release and submit an upstream VoltAgent docs/example PR that links to
-   the package.
+7. Push the version commit and tag, then publish a GitHub release whose tag exactly matches
+   `v<package.json version>`. Publishing the GitHub release triggers `publish.yml`; npm trusted
+   publishing automatically creates provenance.
+8. Install `@couchbase/voltagent@next` in a clean VoltAgent application and repeat a live query.
+9. After review, set `0.1.0`, repeat the checklist, and publish GitHub release `v0.1.0`. Versions
+   containing a prerelease suffix publish under npm's `next` tag; stable versions publish to
+   `latest`.
+10. Submit an upstream VoltAgent docs/example PR that links to the package.
 
-Publishing, tags, GitHub releases, and upstream PRs require maintainer credentials and approval; the
-repository itself does not perform those external actions.
+Publishing, tags, GitHub releases, npm trusted-publisher configuration, and upstream PRs require
+maintainer credentials and approval. Do not create a GitHub release until the npm environment and
+trusted publisher are configured: a published release triggers the package workflow immediately.
