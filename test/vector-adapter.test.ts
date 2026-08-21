@@ -443,6 +443,13 @@ describe("CouchbaseVectorAdapter index lifecycle", () => {
     );
   });
 
+  it("rejects an index configuration that disables vectors required for reranking", () => {
+    const { adapter } = createHarness({ nProbes: 4, rerank: true });
+    expect(() => adapter.getHyperscaleVectorIndexStatement({ persistFullVector: false })).toThrow(
+      "persistFullVector must remain enabled",
+    );
+  });
+
   it("creates, waits for, and reports the index", async () => {
     const { adapter, cluster, collection } = createHarness();
     const managers = collection.queryIndexes();

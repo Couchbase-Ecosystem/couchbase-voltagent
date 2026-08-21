@@ -19,6 +19,14 @@ Pinecone's current VoltAgent material is an example, not a published `@voltagent
 No current VoltAgent Milvus provider package was found. A standalone Couchbase package is therefore
 a substantive integration, not a wrapper duplicating an established upstream provider.
 
+The Query path was also cross-checked against Couchbase's `langchain-couchbase`
+`CouchbaseQueryVectorStore` at commit `5f3c36ddc1cb4cab67c700711291b224c3376e0d`. Both use SQL++
+Query and GSI Hyperscale indexes; its `ANN_DISTANCE` call is an alias of this package's
+`APPROX_VECTOR_DISTANCE`. The VoltAgent adapter additionally exposes query-time probes, reranking,
+and candidate-scan controls, while index creation exposes the shared `description`,
+`scan_nprobes`, and `train_list` options plus Couchbase's `persist_full_vector` option. The separate
+Search/FTS vector-store implementation is intentionally out of scope.
+
 ## Capability mapping
 
 | Requirement | Couchbase decision |

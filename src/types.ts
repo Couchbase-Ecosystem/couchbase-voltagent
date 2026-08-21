@@ -59,6 +59,12 @@ export interface HyperscaleIndexOptions {
   indexName?: string;
   /** Hyperscale algorithm and quantization. Defaults to IVF,SQ8. */
   description?: string;
+  /** Default number of centroids to probe when a query does not supply nProbes. */
+  scanNProbes?: number;
+  /** Number of vectors sampled to train the index. Couchbase permits at most 1,000,000. */
+  trainList?: number;
+  /** Store full vectors for reranking. Defaults to true in Couchbase Server. */
+  persistFullVector?: boolean;
   /** Wait for the index to become online. Defaults to true. */
   waitUntilReady?: boolean;
   /** Index readiness timeout in milliseconds. Defaults to 120000. */

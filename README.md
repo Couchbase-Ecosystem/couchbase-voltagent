@@ -195,6 +195,32 @@ const vectors = new CouchbaseVectorAdapter({
 After changing `dimensions`, `filterFields`, `documentType`, or index algorithm settings, rebuild the
 index before serving queries.
 
+### Hyperscale tuning
+
+The adapter covers the Query Service tuning controls used by Couchbase's Query vector integrations.
+Index-build defaults can be changed during provisioning:
+
+```ts
+await vectors.createHyperscaleVectorIndex({
+  description: "IVF,SQ8",
+  scanNProbes: 4,
+  trainList: 50_000,
+  persistFullVector: true,
+});
+```
+
+`scanNProbes` sets the index's default probe count, while constructor option `nProbes` overrides the
+probe count in each `APPROX_VECTOR_DISTANCE` query. Constructor options `rerank` and `topNScan`
+control query-time reranking and candidate scanning. Reranking requires `persistFullVector`; the
+adapter rejects an explicitly incompatible configuration. More probes, a larger training sample,
+and reranking can improve recall at a latency, throughput, memory, or build-time cost, so benchmark
+them with representative data rather than treating larger values as universally better.
+
+The similarity metric remains `COSINE`: VoltAgent's `VectorAdapter` contract requires cosine
+similarity and a normalized `0..1` score. Couchbase Query also supports DOT and Euclidean metrics,
+but exposing them here would violate that framework contract. `ANN_DISTANCE` is an alias of the
+`APPROX_VECTOR_DISTANCE` function used by this package.
+
 ## Connection ownership
 
 Pass connection fields and `close()` will close the SDK cluster created by the adapter. Alternatively,

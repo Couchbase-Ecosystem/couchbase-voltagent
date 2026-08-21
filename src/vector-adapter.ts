@@ -281,6 +281,11 @@ export class CouchbaseVectorAdapter implements VectorAdapter {
 
   /** Build the explicit Server 8.0+ Hyperscale index DDL without executing it. */
   getHyperscaleVectorIndexStatement(options: HyperscaleIndexOptions = {}): string {
+    if (options.persistFullVector === false && this.options.rerank === true) {
+      throw new CouchbaseVectorAdapterConfigurationError(
+        "persistFullVector must remain enabled when adapter queries use rerank",
+      );
+    }
     return buildHyperscaleVectorIndexStatement({
       bucketName: this.bucketName,
       scopeName: this.scopeName,
@@ -290,6 +295,11 @@ export class CouchbaseVectorAdapter implements VectorAdapter {
       filterFields: this.filterFields,
       indexName: options.indexName ?? this.indexName,
       description: options.description ?? DEFAULT_HYPERSCALE_INDEX_OPTIONS.description,
+      ...(options.scanNProbes === undefined ? {} : { scanNProbes: options.scanNProbes }),
+      ...(options.trainList === undefined ? {} : { trainList: options.trainList }),
+      ...(options.persistFullVector === undefined
+        ? {}
+        : { persistFullVector: options.persistFullVector }),
     });
   }
 

@@ -37,6 +37,9 @@ live("CouchbaseVectorAdapter live Couchbase Server 8", () => {
     dimensions: 2,
     filterFields: ["userId", "conversationId"],
     indexName: "voltagent_test_hyperscale",
+    nProbes: 1,
+    rerank: true,
+    topNScan: 10,
   });
 
   beforeAll(async () => {
@@ -85,7 +88,11 @@ live("CouchbaseVectorAdapter live Couchbase Server 8", () => {
         metadata: { userId: "u2", conversationId: "c2" },
       },
     ]);
-    await adapter.createHyperscaleVectorIndex();
+    await adapter.createHyperscaleVectorIndex({
+      scanNProbes: 1,
+      trainList: 3,
+      persistFullVector: true,
+    });
   });
 
   afterAll(async () => {

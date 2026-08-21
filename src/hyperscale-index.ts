@@ -11,6 +11,9 @@ export interface HyperscaleIndexStatementOptions {
   filterFields: readonly string[];
   indexName: string;
   description?: string;
+  scanNProbes?: number;
+  trainList?: number;
+  persistFullVector?: boolean;
 }
 
 /**
@@ -35,6 +38,20 @@ export function buildHyperscaleVectorIndexStatement(
   if (options.description !== undefined && options.description.length === 0) {
     throw new CouchbaseVectorAdapterConfigurationError("description must not be empty");
   }
+  for (const [name, value] of [
+    ["scanNProbes", options.scanNProbes],
+    ["trainList", options.trainList],
+  ] as const) {
+    if (value !== undefined && (!Number.isInteger(value) || value <= 0)) {
+      throw new CouchbaseVectorAdapterConfigurationError(`${name} must be a positive integer`);
+    }
+  }
+  if (options.trainList !== undefined && options.trainList > 1_000_000) {
+    throw new CouchbaseVectorAdapterConfigurationError("trainList must not exceed 1000000");
+  }
+  if (options.persistFullVector !== undefined && typeof options.persistFullVector !== "boolean") {
+    throw new CouchbaseVectorAdapterConfigurationError("persistFullVector must be a boolean");
+  }
   if (
     new Set(options.filterFields).size !== options.filterFields.length ||
     options.filterFields.some((field) => !field)
@@ -55,6 +72,11 @@ export function buildHyperscaleVectorIndexStatement(
     dimension: options.dimensions,
     similarity: "COSINE",
     description: options.description ?? "IVF,SQ8",
+    ...(options.scanNProbes === undefined ? {} : { scan_nprobes: options.scanNProbes }),
+    ...(options.trainList === undefined ? {} : { train_list: options.trainList }),
+    ...(options.persistFullVector === undefined
+      ? {}
+      : { persist_full_vector: options.persistFullVector }),
   };
 
   return [
