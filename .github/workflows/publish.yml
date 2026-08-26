@@ -43,7 +43,7 @@ jobs:
       - name: Check whether this immutable version already exists
         id: registry
         run: |
-          if npm view "@couchbase/voltagent@${{ steps.release.outputs.version }}" version >/dev/null 2>&1; then
+          if npm view "@couchbase-ecosystem/voltagent@${{ steps.release.outputs.version }}" version >/dev/null 2>&1; then
             echo "exists=true" >> "${GITHUB_OUTPUT}"
           else
             echo "exists=false" >> "${GITHUB_OUTPUT}"
@@ -53,4 +53,4 @@ jobs:
         run: npm publish --access public --tag "${{ steps.release.outputs.tag }}"
       - name: Report an already-published bootstrap version
         if: steps.registry.outputs.exists == 'true'
-        run: echo "@couchbase/voltagent@${{ steps.release.outputs.version }} already exists; keeping the GitHub Release without republishing it."
+        run: echo "@couchbase-ecosystem/voltagent@${{ steps.release.outputs.version }} already exists; keeping the GitHub Release without republishing it."

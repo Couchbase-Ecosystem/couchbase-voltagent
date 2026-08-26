@@ -1,5 +1,5 @@
 {
-  "name": "@couchbase/voltagent",
+  "name": "@couchbase-ecosystem/voltagent",
   "version": "0.1.0",
   "description": "Couchbase vector search and retrieval integration for VoltAgent",
   "keywords": [

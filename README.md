@@ -1,6 +1,6 @@
 # Couchbase for VoltAgent
 
-`@couchbase/voltagent` adds Couchbase-backed vector memory and retrieval to
+`@couchbase-ecosystem/voltagent` adds Couchbase-backed vector memory and retrieval to
 [VoltAgent](https://voltagent.dev/). It implements VoltAgent's public `VectorAdapter` contract and
 uses Couchbase Server 8.0+ Hyperscale Vector Search through SQL++.
 
@@ -27,7 +27,7 @@ function. Hyperscale Vector Search is the default and only search backend in thi
 ## Install
 
 ```bash
-npm install @couchbase/voltagent @voltagent/core
+npm install @couchbase-ecosystem/voltagent @voltagent/core
 ```
 
 ## Quickstart
@@ -36,7 +36,7 @@ Create a bucket, scope, and dedicated collection first. The examples use
 `app.application.voltagent_vectors`.
 
 ```ts
-import { CouchbaseVectorAdapter } from "@couchbase/voltagent";
+import { CouchbaseVectorAdapter } from "@couchbase-ecosystem/voltagent";
 
 const vectors = new CouchbaseVectorAdapter({
   connectionString: process.env.CB_CONNECTION_STRING!,
@@ -80,7 +80,7 @@ privileged credential; do not grant Query Manage Index to the application runtim
 
 ```ts
 import { InMemoryStorageAdapter, Memory } from "@voltagent/core";
-import { CouchbaseVectorAdapter } from "@couchbase/voltagent";
+import { CouchbaseVectorAdapter } from "@couchbase-ecosystem/voltagent";
 
 const vector = new CouchbaseVectorAdapter({
   connectionString: process.env.CB_CONNECTION_STRING!,
@@ -108,7 +108,7 @@ memory. Those fields are included in the default Hyperscale index.
 function so the package remains provider-neutral.
 
 ```ts
-import { CouchbaseRetriever } from "@couchbase/voltagent/retriever";
+import { CouchbaseRetriever } from "@couchbase-ecosystem/voltagent/retriever";
 
 const retriever = new CouchbaseRetriever({
   adapter: vectors,

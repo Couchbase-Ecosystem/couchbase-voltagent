@@ -8,8 +8,8 @@ process.env.NODE_ENV ??= "production";
 
 const [voltagent, couchbaseIntegration, couchbaseRetriever, couchbase] = await Promise.all([
   import("@voltagent/core"),
-  import("@couchbase/voltagent"),
-  import("@couchbase/voltagent/retriever"),
+  import("@couchbase-ecosystem/voltagent"),
+  import("@couchbase-ecosystem/voltagent/retriever"),
   import("couchbase"),
 ]);
 

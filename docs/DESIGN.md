@@ -3,9 +3,9 @@
 ## Decision
 
 - Status: implementable with explicit platform limitations.
-- Delivery: standalone Couchbase-owned npm package, followed by an upstream VoltAgent example/docs
-  contribution.
-- Package: `@couchbase/voltagent`; no PyPI artifact.
+- Delivery: standalone Couchbase-ecosystem npm package, followed by an upstream VoltAgent
+  example/docs contribution.
+- Package: `@couchbase-ecosystem/voltagent`; no PyPI artifact.
 - Search backend: Couchbase Server 8.0+/Capella Operational Hyperscale Vector Search by default.
 
 ## Target contract and references

@@ -33,7 +33,7 @@ application records.
 ## 3. Install and configure
 
 ```bash
-npm install @couchbase/voltagent @voltagent/core
+npm install @couchbase-ecosystem/voltagent @voltagent/core
 ```
 
 ```bash

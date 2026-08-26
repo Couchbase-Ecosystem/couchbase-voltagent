@@ -6,7 +6,7 @@
     "moduleResolution": "NodeNext",
     "ignoreDeprecations": "6.0",
     "paths": {
-      "@couchbase/voltagent": ["./src/index.ts"]
+      "@couchbase-ecosystem/voltagent": ["./src/index.ts"]
     },
     "declaration": true,
     "declarationMap": true,

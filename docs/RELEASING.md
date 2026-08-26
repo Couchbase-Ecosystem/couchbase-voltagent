@@ -7,16 +7,16 @@ not implement its runtime contracts.
 
 - Confirm the `Couchbase-Ecosystem/couchbase-voltagent` repository metadata in `package.json` still
   matches the public release location.
-- Obtain publish access to the `@couchbase` npm organization and enable two-factor authentication
-  on the maintainer account.
-- Ensure the package name `@couchbase/voltagent` is approved for public use.
+- Obtain publish access to the `@couchbase-ecosystem` npm organization and enable two-factor
+  authentication on the maintainer account.
+- Ensure the package name `@couchbase-ecosystem/voltagent` is approved for public use.
 - Create a protected GitHub environment named `npm`, with the package maintainers as required
   reviewers.
 
 ## Bootstrap the package and trusted publisher
 
 The npm package must exist before its trusted publisher can be configured. A maintainer with
-`@couchbase` publish permission first sets and commits a bootstrap prerelease version such as
+`@couchbase-ecosystem` publish permission first sets and commits a bootstrap prerelease version such as
 `0.1.0-rc.0`, pushes its commit and tag, and then performs this one-time publish from a clean
 checkout:
 
@@ -81,7 +81,7 @@ two-factor authentication and disallow tokens**.
 7. Push the version commit and tag, then publish a GitHub release whose tag exactly matches
    `v<package.json version>`. Publishing the GitHub release triggers `publish.yml`; npm trusted
    publishing automatically creates provenance.
-8. Install `@couchbase/voltagent@next` in a clean VoltAgent application and repeat a live query.
+8. Install `@couchbase-ecosystem/voltagent@next` in a clean VoltAgent application and repeat a live query.
 9. After review, set `0.1.0`, repeat the checklist, and publish GitHub release `v0.1.0`. Versions
    containing a prerelease suffix publish under npm's `next` tag; stable versions publish to
    `latest`.

@@ -1,4 +1,4 @@
-import { CouchbaseVectorAdapter } from "@couchbase/voltagent";
+import { CouchbaseVectorAdapter } from "@couchbase-ecosystem/voltagent";
 import { type EmbeddingAdapter, InMemoryStorageAdapter, Memory } from "@voltagent/core";
 
 class TutorialEmbedding implements EmbeddingAdapter {
