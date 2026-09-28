@@ -13,6 +13,8 @@ Notes for anyone, human or agent, changing this repository. The README is for us
 
 This is an npm-only package with `package-lock.json` and Node.js 22+. Don't switch package managers. Update the lockfile with npm 11 (`npx -y npm@11 install ...`); npm 10 drops the `libc` fields and churns the lockfile.
 
+Couchbase Server 8.0+ Hyperscale Vector Search through SQL++ is the only supported backend. Don't replace it with Search-service vector queries unless a maintainer explicitly asks.
+
 ## Checks
 
 ```bash
@@ -21,10 +23,14 @@ npm run check                     # lint, typecheck, test, build, publint
 npm run test:coverage
 npm pack --dry-run                # review the file list
 npx attw --pack
+npm audit --omit=dev --audit-level=high
 npm run test:integration:docker   # live tests against a throwaway Couchbase Server 8 container
+npm run example:customer-support:docker
 ```
 
 CI runs the same checks on Node.js 22, 24 and 26 (`ci.yml`), and the live tests in `live-integration.yml`. The design rules the adapter must keep are under "Implementation contracts" in [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md#implementation-contracts). Never commit `.env` files or credentials.
+
+The Docker scripts start a `couchbase-voltagent-test` container that publishes host ports 8091-8096 and 11210, so those ports must be free. When bumping dependencies, keep the `@voltagent/core` "verified with" version in `README.md` and the pinned `tsx` version in `docs/TUTORIAL.md` in sync with `package.json`.
 
 ## Pull requests
 
@@ -39,6 +45,6 @@ The full checklist is in [docs/RELEASING.md](docs/RELEASING.md). In short:
 2. A maintainer opens a `chore(release): <version>` PR that bumps `package.json` and the lockfile and adds the `CHANGELOG.md` section.
 3. After it merges, a maintainer pushes the tag `v<version>` on the merge commit. `publish.yml` checks the tag against `package.json` and npm, runs every check and the live tests, publishes to npm with provenance over OIDC from the `npm` environment, then publishes the draft release.
 
-Agents may prepare release PRs (version bump, lockfile, changelog, docs). Pushing `v*` tags, publishing or editing GitHub releases, running `publish.yml` with `dry_run: false`, and anything on npmjs.com need explicit approval from a maintainer for that specific release. Ask before dispatching `publish.yml`, even as a dry run.
+Agents may prepare release PRs (version bump, lockfile, changelog, docs). Pushing `v*` tags, publishing or editing GitHub releases, running `publish.yml` with `dry_run: false`, and anything on npmjs.com need explicit approval from a maintainer for that specific release. Ask before dispatching `publish.yml`, even as a dry run. Opening upstream VoltAgent docs or example PRs also needs maintainer approval.
 
 Things that break publishing if changed without updating the trusted publisher on npmjs.com: the workflow filename `publish.yml`, the `npm` environment name, and `repository.url` in `package.json` (provenance requires it to match this repository).

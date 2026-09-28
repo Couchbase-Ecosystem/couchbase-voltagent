@@ -57,7 +57,7 @@ npm run example:semantic-memory
 In another project, copy [examples/semantic-memory.ts](../examples/semantic-memory.ts), then run:
 
 ```bash
-npm install --save-dev tsx@4.23.12
+npm install --save-dev tsx@4.23.15
 npx tsx semantic-memory.ts
 ```
 

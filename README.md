@@ -18,7 +18,7 @@ function. Hyperscale Vector Search is the default and only search backend in thi
 
 - Node.js 22 or newer. CI covers maintained Node.js 22 and 24 LTS releases plus Node.js 26
   Current.
-- `@voltagent/core` 2.4 or newer in the 2.x release line (verified with 2.9.2).
+- `@voltagent/core` 2.4 or newer in the 2.x release line (verified with 2.11.0).
 - Couchbase Server 8.0+ or a current Capella Operational cluster with Data, Query, and Index
   services. The Docker verification uses Couchbase Server 8.0.2.
 - A COSINE Hyperscale vector index whose dimension matches the embedding model.
