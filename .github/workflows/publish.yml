@@ -69,6 +69,7 @@ jobs:
               exit 1
             fi
             echo "::warning::${name}@${version} is already published; continuing because this is a dry run"
+            echo "ALREADY_ON_NPM=true" >> "$GITHUB_ENV"
           fi
       - name: Check npm supports trusted publishing
         run: |
@@ -87,6 +88,8 @@ jobs:
           version="$(node -p "require('./package.json').version")"
           if [[ "$version" == *-* ]]; then echo "NPM_DIST_TAG=next"; else echo "NPM_DIST_TAG=latest"; fi >> "$GITHUB_ENV"
       - name: Publish dry run
+        # npm 11 refuses even a dry run over an existing version; npm pack --dry-run above covers it.
+        if: env.ALREADY_ON_NPM != 'true'
         run: npm publish --dry-run --access public --tag "$NPM_DIST_TAG"
       - name: Publish to npm with provenance
         if: ${{ github.event_name == 'push' || !inputs.dry_run }}
