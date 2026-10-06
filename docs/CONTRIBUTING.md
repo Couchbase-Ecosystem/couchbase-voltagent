@@ -64,6 +64,31 @@ disposable bucket and credentials with namespace/index-management permissions.
   error so callers never observe operations continuing after the promise settles.
 - Avoid network calls at module import time.
 
+## Pull request labels
+
+Release notes are generated from merged PR titles and grouped by label (`.github/release.yml`); an
+unlabelled PR ends up under "Other changes".
+
+| Label | Use for |
+| --- | --- |
+| `breaking-change` | Public API, supported Node.js or `@voltagent/core` range, or stored document format changes in a way users must act on |
+| `enhancement` | New functionality |
+| `bug` | Fixes |
+| `testing` | Test suite changes |
+| `ci` | Workflows and release automation |
+| `documentation` | Documentation only |
+| `dependencies` | Dependency updates |
+| `skip-changelog` | Release version bumps and chores that should not appear in the notes |
+
+`label-pull-requests.yml` applies most of these automatically: from the title prefix (`feat` →
+`enhancement`, `fix` → `bug`, `docs` → `documentation`, `test` → `testing`, `ci`/`build` → `ci`, a
+`deps` scope → `dependencies`, a `release` scope → `skip-changelog`, `!` or a `BREAKING CHANGE:`
+footer → `breaking-change`) and from changed paths (`.github/**` → `ci`, `*.md` → `documentation`,
+test files → `testing`). It only adds labels, so a label corrected by hand stays. Labels can still
+be fixed after merge; then run **Draft release** from the Actions tab to regenerate the draft.
+
+The release process is in [RELEASING.md](RELEASING.md).
+
 ## Package checks
 
 Before release, run `npm run check`, `npm run test:coverage`,

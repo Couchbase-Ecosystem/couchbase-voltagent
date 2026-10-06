@@ -1,10 +1,30 @@
 name: Live Couchbase integration
 
+# Runs the live integration tests and the customer-support example against a throwaway Couchbase
+# Server 8 container on every PR that can change their outcome, nightly, and on demand.
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - 'docs/examples/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsup.config.ts'
+      - 'vitest.integration.config.ts'
+      - '.github/workflows/live-integration.yml'
+  schedule:
+    - cron: '0 5 * * *'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   couchbase-server-8:
