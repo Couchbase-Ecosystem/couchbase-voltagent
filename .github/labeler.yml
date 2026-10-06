@@ -7,11 +7,24 @@
 # from the conventional-commit title (or a human).
 #
 # Labels are added, never removed (`sync-labels: false`), so a maintainer's correction sticks.
+#
+# `ci` means the workflows or release automation changed, not that the PR runs CI. A dependency
+# refresh that touches package.json, package-lock.json and some Markdown is labelled
+# `dependencies` + `documentation`, without `ci`.
 
 ci:
   - changed-files:
       - any-glob-to-any-file:
           - '.github/**'
+
+# The npm manifest and lockfile at the repository root are the only dependency files this repo
+# has. A package.json edit that only touches scripts or exports is labelled too; that is the price
+# of a path rule, and a `feat`/`fix` title still files the PR under Features or Fixes first.
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'package-lock.json'
 
 documentation:
   - changed-files:
