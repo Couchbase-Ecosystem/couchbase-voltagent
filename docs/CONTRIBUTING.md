@@ -84,8 +84,14 @@ unlabelled PR ends up under "Other changes".
 `enhancement`, `fix` → `bug`, `docs` → `documentation`, `test` → `testing`, `ci`/`build` → `ci`, a
 `deps` scope → `dependencies`, a `release` scope → `skip-changelog`, `!` or a `BREAKING CHANGE:`
 footer → `breaking-change`) and from changed paths (`.github/**` → `ci`, `*.md` → `documentation`,
-test files → `testing`). It only adds labels, so a label corrected by hand stays. Labels can still
-be fixed after merge; then run **Draft release** from the Actions tab to regenerate the draft.
+test files → `testing`, `package.json`/`package-lock.json` → `dependencies`). It only adds labels,
+so a label corrected by hand stays. Labels can still be fixed after merge; then run **Draft
+release** from the Actions tab to regenerate the draft.
+
+`ci` means the workflows or release automation changed, not that the PR has CI checks. A dependency
+refresh that also edits Markdown, for example, gets `dependencies` and `documentation` but not
+`ci`. The path rules are read from the base branch, so a change to `.github/labeler.yml` only
+applies to PR events after it is merged.
 
 The release process is in [RELEASING.md](RELEASING.md).
 
