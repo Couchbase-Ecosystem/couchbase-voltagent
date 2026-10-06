@@ -48,6 +48,10 @@ const vectors = new CouchbaseVectorAdapter({
   dimensions: 1536,
 });
 
+// Placeholder embeddings; replace with a real embedding model's output.
+const embedding = Array.from({ length: 1536 }, (_, i) => Math.sin(i + 1));
+const queryEmbedding = embedding;
+
 await vectors.storeBatch([
   {
     id: "doc-1",
@@ -66,7 +70,7 @@ const matches = await vectors.search(queryEmbedding, {
   filter: { userId: "user-1", conversationId: "conversation-1" },
 });
 
-console.log(matches);
+console.log(matches.map(({ id, score, content }) => ({ id, score, content })));
 await vectors.close();
 ```
 
@@ -78,8 +82,13 @@ privileged credential; do not grant Query Manage Index to the application runtim
 
 ### VoltAgent semantic memory
 
+Give an `Agent` a `Memory` with this adapter as `vector`, and VoltAgent embeds each message and
+recalls similar earlier messages before the model is called. This example uses OpenAI models
+through VoltAgent's model strings, so set `OPENAI_API_KEY`. It reuses the Quickstart collection and
+index; `text-embedding-3-small` returns 1536-dimensional vectors.
+
 ```ts
-import { InMemoryStorageAdapter, Memory } from "@voltagent/core";
+import { Agent, InMemoryStorageAdapter, Memory } from "@voltagent/core";
 import { CouchbaseVectorAdapter } from "@couchbase-ecosystem/voltagent";
 
 const vector = new CouchbaseVectorAdapter({
@@ -97,6 +106,22 @@ const memory = new Memory({
   embedding: { model: "openai/text-embedding-3-small" },
   vector,
 });
+
+const agent = new Agent({
+  name: "assistant",
+  instructions: "You are a helpful assistant. Answer in one sentence.",
+  model: "openai/gpt-4o-mini",
+  memory,
+});
+
+const conversation = { userId: "user-2", conversationId: "conversation-2" };
+await agent.generateText("My favorite database is Couchbase.", { memory: conversation });
+const reply = await agent.generateText("Which database do I like?", { memory: conversation });
+
+console.log(reply.text);
+await vector.close();
+// The agent's built-in VoltAgent observability keeps a timer running, so end the script explicitly.
+process.exit(0);
 ```
 
 VoltAgent automatically supplies `userId` and `conversationId` equality filters for semantic
@@ -105,20 +130,68 @@ memory. Those fields are included in the default Hyperscale index.
 ### Couchbase retriever
 
 `CouchbaseRetriever` turns the same adapter into a VoltAgent `BaseRetriever`. Supply the embedding
-function so the package remains provider-neutral.
+function so the package remains provider-neutral. This example embeds with VoltAgent's
+`AiSdkEmbeddingAdapter` and answers with an OpenAI model, so set `OPENAI_API_KEY`.
 
 ```ts
+import { Agent, AiSdkEmbeddingAdapter } from "@voltagent/core";
+import { CouchbaseVectorAdapter } from "@couchbase-ecosystem/voltagent";
 import { CouchbaseRetriever } from "@couchbase-ecosystem/voltagent/retriever";
+
+const embedding = new AiSdkEmbeddingAdapter("openai/text-embedding-3-small");
+
+const vectors = new CouchbaseVectorAdapter({
+  connectionString: process.env.CB_CONNECTION_STRING!,
+  username: process.env.CB_USERNAME!,
+  password: process.env.CB_PASSWORD!,
+  bucketName: "app",
+  scopeName: "application",
+  collectionName: "voltagent_vectors",
+  dimensions: 1536,
+});
+
+// Load the knowledge base. `content` is what the retriever hands to the model, and `title` is
+// reported in the retrieval references.
+const articles = [
+  { id: "kb-returns", title: "Returns", content: "Unused items can be returned within 30 days." },
+  { id: "kb-shipping", title: "Shipping", content: "Standard shipping takes 3 to 5 business days." },
+];
+const articleVectors = await embedding.embedBatch(articles.map((article) => article.content));
+await vectors.storeBatch(
+  articles.map((article, index) => ({
+    id: article.id,
+    vector: articleVectors[index],
+    content: article.content,
+    metadata: { userId: "user-1", title: article.title },
+  })),
+);
 
 const retriever = new CouchbaseRetriever({
   adapter: vectors,
-  embed: embedText,
+  embed: (text) => embedding.embed(text),
   topK: 3,
   threshold: 0.7,
+  // Only search the calling user's documents. `userId` is a default index prefilter.
   filter: ({ userId }) => (userId ? { userId } : undefined),
 });
 
-// Use directly as an agent retriever or expose retriever.tool.
+// Call the retriever directly...
+console.log(await retriever.retrieve("How long do I have to return an item?", { userId: "user-1" }));
+
+// ...or give it to an agent, which retrieves before every call. Expose `retriever.tool` instead to
+// let the model decide when to search.
+const agent = new Agent({
+  name: "support",
+  instructions: "Answer customer questions using only the retrieved documents.",
+  model: "openai/gpt-4o-mini",
+  retriever,
+});
+const answer = await agent.generateText("How long does shipping take?", { userId: "user-1" });
+
+console.log(answer.text);
+await vectors.close();
+// The agent's built-in VoltAgent observability keeps a timer running, so end the script explicitly.
+process.exit(0);
 ```
 
 ## Provision Couchbase
@@ -185,8 +258,15 @@ only for `filterFields`; unknown fields and non-scalar values throw
 `CouchbaseUnsupportedFilterError` instead of falling back to an incorrect or expensive query.
 
 ```ts
+import { CouchbaseVectorAdapter } from "@couchbase-ecosystem/voltagent";
+
 const vectors = new CouchbaseVectorAdapter({
-  // connection and namespace...
+  connectionString: process.env.CB_CONNECTION_STRING!,
+  username: process.env.CB_USERNAME!,
+  password: process.env.CB_PASSWORD!,
+  bucketName: "app",
+  scopeName: "application",
+  collectionName: "voltagent_vectors",
   dimensions: 1024,
   filterFields: ["userId", "conversationId", "tenantId", "category"],
 });
@@ -198,7 +278,8 @@ index before serving queries.
 ### Hyperscale tuning
 
 The adapter covers the Query Service tuning controls used by Couchbase's Query vector integrations.
-Index-build defaults can be changed during provisioning:
+Index-build defaults can be changed during provisioning, here with the `vectors` adapter from the
+Quickstart:
 
 ```ts
 await vectors.createHyperscaleVectorIndex({
@@ -215,6 +296,8 @@ control query-time reranking and candidate scanning. Reranking requires `persist
 adapter rejects an explicitly incompatible configuration. More probes, a larger training sample,
 and reranking can improve recall at a latency, throughput, memory, or build-time cost, so benchmark
 them with representative data rather than treating larger values as universally better.
+`trainList` is the number of vectors sampled to train the index, and it cannot exceed the number of
+documents in the collection: index creation fails with `InvalidTrainListSize` otherwise.
 
 The similarity metric remains `COSINE`: VoltAgent's `VectorAdapter` contract requires cosine
 similarity and a normalized `0..1` score. Couchbase Query also supports DOT and Euclidean metrics,

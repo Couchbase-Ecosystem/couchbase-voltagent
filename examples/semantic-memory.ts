@@ -31,6 +31,11 @@ const vector = new CouchbaseVectorAdapter({
   scopeName: process.env.CB_SCOPE ?? "application",
   collectionName: process.env.CB_COLLECTION ?? "voltagent_vectors",
   dimensions: 2,
+  // A separate ownership namespace and index, so these 2-dimensional tutorial vectors can share the
+  // collection with the README's 1536-dimensional vectors and their default index.
+  documentType: "voltagent_tutorial_vector",
+  keyPrefix: "voltagent::tutorial::",
+  indexName: "voltagent_tutorial_hyperscale",
 });
 
 const memory = new Memory({

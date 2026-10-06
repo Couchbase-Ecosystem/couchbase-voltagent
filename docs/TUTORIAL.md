@@ -64,8 +64,10 @@ npx tsx semantic-memory.ts
 The example performs this sequence:
 
 1. connects to `app.application.voltagent_vectors`;
-2. stores three documents through VoltAgent `Memory`;
-3. creates the default COSINE Hyperscale index with `IVF,SQ8`;
+2. stores three documents through VoltAgent `Memory`, under the tutorial's own `documentType` and
+   key prefix so they don't mix with other vectors in the collection;
+3. creates a COSINE Hyperscale index with `IVF,SQ8`, named `voltagent_tutorial_hyperscale` because
+   the tutorial's 2-dimensional vectors cannot share an index with real embeddings;
 4. searches through VoltAgent's `memory.searchSimilar()` API; and
 5. closes the adapter-owned SDK connection.
 
