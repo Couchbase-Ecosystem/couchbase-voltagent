@@ -76,6 +76,31 @@ jobs:
           npm --version
           node -e "const [a, b, c] = process.argv[1].split('.').map(Number); process.exit(a > 11 || (a === 11 && (b > 5 || (b === 5 && c >= 1))) ? 0 : 1)" "$(npm --version)" \
             || npm install -g npm@^11.5.1
+      - name: Check the npm trusted publisher accepts this workflow
+        # npm publish swallows a failed OIDC token exchange, publishes without credentials and
+        # reports a misleading E404 (v0.1.1). Do the same exchange here so a missing or mismatched
+        # trusted publisher fails fast with the registry's own message. The token is discarded.
+        run: |
+          # shellcheck disable=SC2016 # single quotes keep the JavaScript template literals intact
+          node --input-type=module -e '
+            const name = JSON.parse((await import("node:fs")).readFileSync("package.json", "utf8")).name;
+            const url = new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);
+            url.searchParams.set("audience", "npm:registry.npmjs.org");
+            const id = await fetch(url, { headers: { Authorization: `Bearer ${process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}` } });
+            if (!id.ok) throw new Error(`GitHub did not issue an id-token: HTTP ${id.status}`);
+            const { value } = await id.json();
+            const res = await fetch(
+              `https://registry.npmjs.org/-/npm/v1/oidc/token/exchange/package/${name.replace("/", "%2f")}`,
+              { method: "POST", headers: { Authorization: `Bearer ${value}` } },
+            );
+            if (res.ok && (await res.json()).token) {
+              console.log(`npm trusted publishing is configured for ${name}`);
+            } else {
+              const body = await res.text();
+              console.log(`::error::npm rejected the OIDC token exchange for ${name} (HTTP ${res.status}): ${body}. Check the trusted publisher on npmjs.com matches docs/RELEASING.md.`);
+              process.exit(1);
+            }
+          '
       - run: npm ci
       - run: npm run check
       - run: npm run test:coverage

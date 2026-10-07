@@ -73,6 +73,12 @@ To rehearse without publishing, run **Publish npm package** manually from the Ac
 - **The workflow failed before `npm publish`.** Fix the problem on `main`. If the fix changes the
   released code, delete the tag (`git push origin :refs/tags/v<version>`), then tag the new commit
   and push again. Otherwise re-run the failed jobs.
+- **"npm rejected the OIDC token exchange", or `npm publish` fails with `E404 Not Found - PUT`.**
+  npm did not accept this workflow as a trusted publisher. `npm publish` hides this, publishes
+  without credentials and reports a 404 (this is how `v0.1.1` failed), so the workflow checks the
+  exchange itself before the tests. Have an npm maintainer of the package compare the trusted
+  publisher on npmjs.com with [npm and GitHub settings](#npm-and-github-settings), then re-run the
+  failed jobs. Nothing was published, so the tag can stay.
 - **npm publish succeeded but the GitHub release job failed.** Re-run only that job. It publishes
   the draft, or creates the release if there is no draft.
 - **A bad version reached npm.** npm versions can't be reused. Deprecate it with
