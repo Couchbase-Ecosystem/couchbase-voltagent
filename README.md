@@ -352,3 +352,6 @@ commands and the release process are in [docs/CONTRIBUTING.md](docs/CONTRIBUTING
 ## License
 
 Apache-2.0
+
+## Support
+This project is community-supported
