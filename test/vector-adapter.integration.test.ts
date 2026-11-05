@@ -3,7 +3,7 @@ import { CollectionExistsError, DocumentNotFoundError, ScopeExistsError } from "
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CouchbaseVectorAdapter } from "../src/index.js";
 
-const live = process.env.CB_LIVE_TEST === "1" ? describe.sequential : describe.skip;
+const live = process.env.CB_LIVE_TEST === "1" ? describe : describe.skip;
 
 class LiveEmbedding implements EmbeddingAdapter {
   async embed(text: string): Promise<number[]> {
