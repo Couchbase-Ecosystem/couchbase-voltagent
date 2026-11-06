@@ -88,26 +88,25 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "couchbase": "^4.7.1"
+    "couchbase": "^4.7.2"
   },
   "peerDependencies": {
     "@voltagent/core": ">=2.4.0 <3"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
-    "@biomejs/biome": "2.5.15",
+    "@biomejs/biome": "2.6.5",
     "@types/node": "22.20.5",
-    "@vitest/coverage-v8": "4.1.11",
-    "@voltagent/core": "2.11.0",
+    "@vitest/coverage-v8": "5.1.0",
+    "@voltagent/core": "2.11.1",
     "publint": "0.3.25",
-    "tsup": "8.5.1",
+    "tsup": "9.0.0",
     "tsx": "4.23.15",
     "typescript": "6.0.3",
-    "vitest": "4.1.11"
+    "vitest": "5.1.0"
   },
   "allowScripts": {
-    "couchbase@4.7.1": true,
-    "esbuild@0.27.7": true,
+    "couchbase@4.7.2": true,
     "esbuild@0.28.2": true,
     "protobufjs@7.6.5": true
   }
