@@ -109,5 +109,9 @@
     "couchbase@4.7.2": true,
     "esbuild@0.28.2": true,
     "protobufjs@7.6.5": true
+  },
+  "overrides": {
+    "@opentelemetry/core": "^2.8.0",
+    "uuid": "^11.1.1"
   }
 }
