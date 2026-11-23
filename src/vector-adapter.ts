@@ -29,10 +29,15 @@ import {
 import type {
   CouchbaseFilterValue,
   CouchbaseVectorAdapterOptions,
-  CouchbaseVectorDocument,
   HyperscaleIndexOptions,
   HyperscaleIndexStatus,
 } from "./types.js";
+import {
+  createVectorDocument,
+  isOwnedVectorDocument,
+  resolveContent,
+  toVectorItem,
+} from "./vector-document.js";
 
 const DEFAULT_SCOPE = "_default";
 const DEFAULT_COLLECTION = "voltagent_vectors";
@@ -364,7 +369,7 @@ export class CouchbaseVectorAdapter implements VectorAdapter {
 
     for (let attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt += 1) {
       const now = new Date().toISOString();
-      const inserted = createDocument(item, this.documentType, this.dimensions, now, now);
+      const inserted = createVectorDocument(item, this.documentType, this.dimensions, now, now);
       try {
         await collection.insert(key, inserted);
         return;
@@ -380,7 +385,7 @@ export class CouchbaseVectorAdapter implements VectorAdapter {
         if (!isOwnedVectorDocument(existing, this.documentType)) {
           throw this.collisionError(key);
         }
-        const replacement = createDocument(
+        const replacement = createVectorDocument(
           item,
           this.documentType,
           this.dimensions,
@@ -582,56 +587,4 @@ function validateSearchBounds(limit: number, threshold: number): void {
   if (!Number.isFinite(threshold) || threshold < 0 || threshold > 1) {
     throw new CouchbaseVectorValidationError("search threshold must be between 0 and 1");
   }
-}
-
-function createDocument(
-  item: VectorItem,
-  documentType: string,
-  dimensions: number,
-  createdAt: string,
-  updatedAt: string,
-): CouchbaseVectorDocument {
-  return {
-    documentType,
-    schemaVersion: 1,
-    id: item.id,
-    vector: [...item.vector],
-    dimensions,
-    ...(item.metadata === undefined ? {} : { metadata: item.metadata }),
-    ...(item.content === undefined ? {} : { content: item.content }),
-    createdAt,
-    updatedAt,
-  };
-}
-
-function isOwnedVectorDocument(
-  value: unknown,
-  documentType: string,
-): value is CouchbaseVectorDocument {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const candidate = value as Partial<CouchbaseVectorDocument>;
-  return (
-    candidate.documentType === documentType &&
-    candidate.schemaVersion === 1 &&
-    typeof candidate.id === "string" &&
-    Array.isArray(candidate.vector)
-  );
-}
-
-function toVectorItem(document: CouchbaseVectorDocument): VectorItem {
-  return {
-    id: document.id,
-    vector: [...document.vector],
-    ...(document.metadata === undefined ? {} : { metadata: document.metadata }),
-    ...(document.content === undefined ? {} : { content: document.content }),
-  };
-}
-
-function resolveContent(
-  content: string | undefined,
-  metadata: Record<string, unknown> | undefined,
-): string | undefined {
-  return content ?? (typeof metadata?.content === "string" ? metadata.content : undefined);
 }
